@@ -138,6 +138,10 @@ shipped in [`CodeAMU_Track2/inputs/phase2/`](https://github.com/sajidjavid222/Co
 * Stages 2 and 5: from the cached detector outputs and noise-bank matches, `run_pipeline.py` regenerates every
   intermediate submission (v67, v69, v70, v71, v74, v76, v80, v93, v93_banksyn2 ... v93_banksyn7) identically on all
   5,517 clips; the final output equals the submitted `v93_banksyn7` (13,449 events).
+* Stages 3 and 4 regenerated from scratch on CPU: the GLS spans and two of the three match files are identical up to
+  float rounding. The third (the bank that adds the natural validation events) holds near-identical copies of some
+  recordings, so rounding picks a different copy in 995 clips. Carried through stage 5, this changes the final output
+  in 1 of 5,517 clips: one event edge moves by 0.5 ms (13,449 events either way).
 
 ## Training
 
