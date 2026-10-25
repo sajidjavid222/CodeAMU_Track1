@@ -163,3 +163,9 @@ bash scripts/train_detectors.sh           # 29 runs in dependency order (exact a
   events of the validation folds, predicting offset corrections from local probability-track features.
 * **Post-processing parameters** — chosen on honest out-of-fold validation (folds A / B, 1,806 natural clips); every
   change was kept only if both folds improved.
+
+## License
+
+Code and model weights: MIT (see `LICENSE`). `train/beats/` and `inference/beats/` are the BEATs model code from
+Microsoft UniLM, under its own MIT licence (Copyright (c) 2022 Microsoft). The manifests in `train/manifests/` are
+derived from `ARTPARK-IISc/Vaani-Noise-Event-Dataset` (CC BY 4.0).
