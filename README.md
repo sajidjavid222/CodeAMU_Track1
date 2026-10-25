@@ -7,6 +7,7 @@ Osama Zaheer (Binary Semantics), Ahraz Shamim (Vecmocon Technologies)
 **Final standing: 1st place, Phase 2 (final) leaderboard — Combined 1.6173** (Event F1 0.7895 + Segment Dice 0.8278;
 natural clips F1 0.5197 / Dice 0.7256, synthetic clips F1 0.9981 / Dice 0.9966), submission `v93_banksyn7`.
 Technical report: [`docs/CodeAMU_track_1_1.pdf`](docs/CodeAMU_track_1_1.pdf).
+Detector checkpoints: <https://huggingface.co/sajidjavid/CodeAMU-IndoML2026-Track1>. Companion Track 2 system: <https://github.com/sajidjavid222/CodeAMU_Track2>.
 
 ## System overview
 
@@ -128,7 +129,7 @@ python inference/run_pipeline.py --audio_dir <track2 phase2 audio> --run_dir <di
 which writes `<dir>/output/track2_inputs/{track1_predictions.jsonl, route.json}`: the audio router's probability is
 averaged with a second router that reads detector outputs (`assets/detector_router.pkl`), clips at >= 0.61 are
 synthetic, and stage 2 is re-run under that routing. On the cached Phase 2 detector outputs this reproduces the files
-shipped in `CodeAMU_Track2/inputs/phase2/` byte for byte (3,178 clips, 1,635 synthetic, 13,008 events).
+shipped in [`CodeAMU_Track2/inputs/phase2/`](https://github.com/sajidjavid222/CodeAMU_Track2/tree/main/inputs/phase2) byte for byte (3,178 clips, 1,635 synthetic, 13,008 events).
 
 **Reproduction check** (Track 1 test audio, this repository's code):
 * Stage 1: four of the 24 detectors, one per architecture type (`lg3_full_gold`, `hr_med_syn`, `rb_beats_gold`,
