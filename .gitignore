@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# downloaded from the Hugging Face Hub (scripts/download_checkpoints.py)
+checkpoints/detectors/
+# run directories and training outputs
+work/
+runs/
+output/
+*.part.npz

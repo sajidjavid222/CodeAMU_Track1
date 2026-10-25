@@ -1,0 +1,1435 @@
+rb_beats:
+  final_ensemble_member: false
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split4k.jsonl
+    root: work/train
+    out: runs/rb_beats
+    val_manifest: work/train/val_split4k.jsonl
+    model: beats_hybrid
+    ssl_name: openai/whisper-medium
+    beats_ckpt: /home/sajidj/.cache/huggingface/hub/models--WeiChihChen--BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2/snapshots/172e4071a2912392d9151c70750b9a12f55fc54e/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt
+    lr_encoder: 1.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 8
+    batch_size: 8
+    lr: 0.0007
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: true
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.3790442036329617
+    segment_dice: 0.689478171975123
+    combined: 1.0685223756080846
+    n_clips: 3999
+  decode_params:
+    high: 0.5
+    low: 0.5
+    median_k: 15
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.02
+    snap_win: 0.24
+    min_peak: 0.1
+rb_beats_gold:
+  final_ensemble_member: true
+  init_from: runs/rb_beats/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split4k.jsonl
+    root: work/train
+    out: runs/rb_beats_gold
+    val_manifest: work/train/val_split4k.jsonl
+    model: beats_hybrid
+    ssl_name: openai/whisper-medium
+    beats_ckpt: /home/sajidj/.cache/huggingface/hub/models--WeiChihChen--BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2/snapshots/172e4071a2912392d9151c70750b9a12f55fc54e/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 6
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/rb_beats/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.39257827599536144
+    segment_dice: 0.6914430748720124
+    combined: 1.0840213508673737
+    n_clips: 3999
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.2
+beats_full_gold:
+  final_ensemble_member: true
+  init_from: runs/rb_beats_gold/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/all_gold_13k.jsonl
+    root: .
+    out: runs/beats_full_gold
+    val_manifest: work/official_val.jsonl
+    model: beats_hybrid
+    ssl_name: openai/whisper-medium
+    beats_ckpt: /home/sajidj/.cache/huggingface/hub/models--WeiChihChen--BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2/snapshots/172e4071a2912392d9151c70750b9a12f55fc54e/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 5
+    batch_size: 6
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/rb_beats_gold/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.7294263054897517
+    segment_dice: 0.8689407439356417
+    combined: 1.5983670494253934
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.5
+bg_lg3_syn:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/bg_lg3_syn
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    beats_ckpt: null
+    lr_encoder: 8.0e-06
+    freeze_encoder_epochs: 1
+    epochs: 6
+    batch_size: 8
+    lr: 0.0005
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6571310116086235
+    segment_dice: 0.7670667222327245
+    combined: 1.424197733841348
+    n_clips: 2501
+  decode_params:
+    high: 0.5
+    low: 0.5
+    median_k: 9
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+bg_lg3_syn_gold:
+  final_ensemble_member: true
+  init_from: runs/bg_lg3_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full.jsonl
+    root: .
+    out: runs/bg_lg3_syn_gold
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 6
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/bg_lg3_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6478491823768358
+    segment_dice: 0.7707711734151428
+    combined: 1.4186203557919785
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 9
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.0
+    min_peak: 0.2
+bg_sml_syn:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/bg_sml_syn
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-small
+    beats_ckpt: null
+    lr_encoder: 2.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 8
+    batch_size: 24
+    lr: 0.001
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6418876592190437
+    segment_dice: 0.7603564981699324
+    combined: 1.4022441573889761
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+cb_big:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/cb_big
+    val_manifest: work/official_val.jsonl
+    model: crnn_big
+    ssl_name: none
+    beats_ckpt: null
+    lr_encoder: 0.001
+    freeze_encoder_epochs: 1
+    epochs: 34
+    batch_size: 64
+    lr: 0.001
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6506806282722513
+    segment_dice: 0.7628954082401723
+    combined: 1.4135760365124237
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+cb_s7:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/cb_s7
+    val_manifest: work/official_val.jsonl
+    model: crnn_big
+    ssl_name: none
+    beats_ckpt: null
+    lr_encoder: 0.001
+    freeze_encoder_epochs: 1
+    epochs: 34
+    batch_size: 64
+    lr: 0.001
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 777
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6444143110462085
+    segment_dice: 0.7631685872810103
+    combined: 1.407582898327219
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.02
+    snap_win: 0.24
+    min_peak: 0.1
+cb_s7_gold:
+  final_ensemble_member: true
+  init_from: runs/cb_s7/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full.jsonl
+    root: .
+    out: runs/cb_s7_gold
+    val_manifest: work/official_val.jsonl
+    model: crnn_big
+    ssl_name: none
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 48
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 777
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/cb_s7/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6455015511892451
+    segment_dice: 0.767276979139874
+    combined: 1.4127785303291192
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+gv_lg3_A:
+  final_ensemble_member: true
+  init_from: runs/bg_lg3_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valA.jsonl
+    root: .
+    out: runs/gv_lg3_A
+    val_manifest: work/val_holdA.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 4
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/bg_lg3_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6564102564102565
+    segment_dice: 0.780735198214481
+    combined: 1.4371454546247375
+    n_clips: 1259
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.5
+gv_lg3_B:
+  final_ensemble_member: true
+  init_from: runs/bg_lg3_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valB.jsonl
+    root: .
+    out: runs/gv_lg3_B
+    val_manifest: work/val_holdB.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 4
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/bg_lg3_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6712528663748176
+    segment_dice: 0.7755392453837445
+    combined: 1.4467921117585623
+    n_clips: 1242
+  decode_params:
+    high: 0.5
+    low: 0.35
+    median_k: 9
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.5
+ov_med_syn:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/ov_med_syn
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-medium
+    beats_ckpt: null
+    lr_encoder: 1.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 8
+    batch_size: 16
+    lr: 0.0007
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6395482589145666
+    segment_dice: 0.766633474146743
+    combined: 1.4061817330613096
+    n_clips: 2501
+  decode_params:
+    high: 0.5
+    low: 0.35
+    median_k: 5
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+gv_med_A:
+  final_ensemble_member: true
+  init_from: runs/ov_med_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valA.jsonl
+    root: .
+    out: runs/gv_med_A
+    val_manifest: work/val_holdA.jsonl
+    model: whisper
+    ssl_name: openai/whisper-medium
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 6
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/ov_med_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.657483552631579
+    segment_dice: 0.7793777209978938
+    combined: 1.4368612736294728
+    n_clips: 1259
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.06
+    min_peak: 0.1
+gv_med_B:
+  final_ensemble_member: true
+  init_from: runs/ov_med_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valB.jsonl
+    root: .
+    out: runs/gv_med_B
+    val_manifest: work/val_holdB.jsonl
+    model: whisper
+    ssl_name: openai/whisper-medium
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 6
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/ov_med_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6641713453940529
+    segment_dice: 0.7709384300128458
+    combined: 1.4351097754068987
+    n_clips: 1242
+  decode_params:
+    high: 0.5
+    low: 0.35
+    median_k: 5
+    gap_sec: 0.0
+    min_dur: 0.05
+    expand_sec: 0.02
+    snap_win: 0.24
+    min_peak: 0.2
+gv_sml_A:
+  final_ensemble_member: true
+  init_from: runs/bg_sml_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valA.jsonl
+    root: .
+    out: runs/gv_sml_A
+    val_manifest: work/val_holdA.jsonl
+    model: whisper
+    ssl_name: openai/whisper-small
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 8
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/bg_sml_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6555418211784095
+    segment_dice: 0.7664622287013495
+    combined: 1.422004049879759
+    n_clips: 1259
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+gv_sml_B:
+  final_ensemble_member: true
+  init_from: runs/bg_sml_syn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/gold_plus_valB.jsonl
+    root: .
+    out: runs/gv_sml_B
+    val_manifest: work/val_holdB.jsonl
+    model: whisper
+    ssl_name: openai/whisper-small
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 8
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/bg_sml_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6570593149540518
+    segment_dice: 0.7639691879722774
+    combined: 1.4210285029263292
+    n_clips: 1242
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.35
+hr_med_syn:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 1
+  args:
+    manifest: work/train_full_plus_loud.jsonl
+    root: .
+    out: runs/hr_med_syn
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-medium
+    beats_ckpt: null
+    lr_encoder: 1.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 6
+    batch_size: 8
+    lr: 0.0007
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6323328067403897
+    segment_dice: 0.7650159726182196
+    combined: 1.3973487793586092
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 9
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.2
+hr_med_syn_gold:
+  final_ensemble_member: true
+  init_from: runs/hr_med_syn/best.pt
+  env:
+    SED_TIME_POOL: 1
+  args:
+    manifest: work/train_full.jsonl
+    root: .
+    out: runs/hr_med_syn_gold
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-medium
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 4
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 5
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/hr_med_syn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.6155608790750963
+    segment_dice: 0.7654180446991272
+    combined: 1.3809789237742236
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.35
+    median_k: 5
+    gap_sec: 0.0
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.2
+v9_lg2:
+  final_ensemble_member: false
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v9_lg2
+    val_manifest: work/train/val_split.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v2
+    lr_encoder: 8.0e-06
+    freeze_encoder_epochs: 1
+    epochs: 10
+    batch_size: 16
+    lr: 0.0005
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 5
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.4116331096196868
+    segment_dice: 0.6855098598757203
+    combined: 1.0971429694954071
+    n_clips: 1111
+  decode_params:
+    high: 0.5
+    low: 0.5
+    median_k: 15
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+v9_lg2_gold:
+  final_ensemble_member: true
+  init_from: runs/v9_lg2/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v9_lg2_gold
+    val_manifest: work/train/val_split.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v2
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 4
+    batch_size: 8
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 5
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/v9_lg2/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.40972411909314393
+    segment_dice: 0.6939359656362553
+    combined: 1.1036600847293991
+    n_clips: 1111
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+lg2_full_gold:
+  final_ensemble_member: true
+  init_from: runs/v9_lg2_gold/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/all_gold_13k.jsonl
+    root: .
+    out: runs/lg2_full_gold
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v2
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 6
+    batch_size: 8
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/v9_lg2_gold/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.7431334224873984
+    segment_dice: 0.8758675249727084
+    combined: 1.6190009474601068
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.05
+    snap_win: 0.1
+    min_peak: 0.2
+v9_lg3_s21:
+  final_ensemble_member: true
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v9_lg3_s21
+    val_manifest: work/train/val_split.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    lr_encoder: 8.0e-06
+    freeze_encoder_epochs: 1
+    epochs: 12
+    batch_size: 16
+    lr: 0.0005
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 21
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.41991101223581756
+    segment_dice: 0.691998849617345
+    combined: 1.1119098618531627
+    n_clips: 1111
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.5
+lg3_full_gold:
+  final_ensemble_member: true
+  init_from: runs/v9_lg3_s21/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/all_gold_13k.jsonl
+    root: .
+    out: runs/lg3_full_gold
+    val_manifest: work/official_val.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    beats_ckpt: null
+    lr_encoder: 5.0e-06
+    freeze_encoder_epochs: 0
+    epochs: 6
+    batch_size: 8
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/v9_lg3_s21/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.7644453599752807
+    segment_dice: 0.8902294166028041
+    combined: 1.654674776578085
+    n_clips: 2501
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 9
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.02
+    snap_win: 0.06
+    min_peak: 0.2
+v2_crnn:
+  final_ensemble_member: false
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v2_crnn
+    val_manifest: work/train/val_split.jsonl
+    model: crnn
+    ssl_name: microsoft/wavlm-base-plus
+    lr_encoder: 3.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 40
+    batch_size: 96
+    lr: 0.001
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+  validation_score:
+    event_f1: 0.3737541528239203
+    segment_dice: 0.6754122815858973
+    combined: 1.0491664344098175
+    n_clips: 1111
+  decode_params:
+    high: 0.5
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+v2_crnn_gold:
+  final_ensemble_member: true
+  init_from: runs/v2_crnn/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v2_crnn_gold
+    val_manifest: work/train/val_split.jsonl
+    model: crnn
+    ssl_name: microsoft/wavlm-base-plus
+    lr_encoder: 3.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 12
+    batch_size: 64
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    gold_only: true
+    init_from: runs/v2_crnn/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+  validation_score:
+    event_f1: 0.38846572361262244
+    segment_dice: 0.681249297211313
+    combined: 1.0697150208239354
+    n_clips: 1111
+  decode_params:
+    high: 0.5
+    low: 0.5
+    median_k: 15
+    gap_sec: 0.1
+    min_dur: 0.05
+    expand_sec: 0.0
+    snap_win: 0.16
+    min_peak: 0.1
+v4_wavlm:
+  final_ensemble_member: false
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v4_wavlm
+    val_manifest: work/train/val_split.jsonl
+    model: ssl
+    ssl_name: microsoft/wavlm-base-plus
+    lr_encoder: 3.0e-05
+    freeze_encoder_epochs: 1
+    epochs: 10
+    batch_size: 48
+    lr: 0.001
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 4
+  validation_score:
+    event_f1: 0.370539537539252
+    segment_dice: 0.6685497540173811
+    combined: 1.0390892915566332
+    n_clips: 1111
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+v4_wavlm_gold:
+  final_ensemble_member: true
+  init_from: runs/v4_wavlm/swa.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v4_wavlm_gold
+    val_manifest: work/train/val_split.jsonl
+    model: ssl
+    ssl_name: microsoft/wavlm-base-plus
+    lr_encoder: 1.0e-05
+    freeze_encoder_epochs: 0
+    epochs: 6
+    batch_size: 32
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 10
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    gold_only: true
+    init_from: runs/v4_wavlm/swa.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 2
+  validation_score:
+    event_f1: 0.38509316770186336
+    segment_dice: 0.675636393491298
+    combined: 1.0607295611931613
+    n_clips: 1111
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.0
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.35
+v8_whis_lg:
+  final_ensemble_member: false
+  init_from: null
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v8_whis_lg
+    val_manifest: work/train/val_split.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    lr_encoder: 6.0e-06
+    freeze_encoder_epochs: 1
+    epochs: 4
+    batch_size: 6
+    lr: 0.0005
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.25
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: false
+    init_from: null
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.39285714285714285
+    segment_dice: 0.6833943961959932
+    combined: 1.076251539053136
+    n_clips: 1111
+  decode_params:
+    high: 0.6
+    low: 0.5
+    median_k: 1
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1
+v8_whis_lg_gold:
+  final_ensemble_member: true
+  init_from: runs/v8_whis_lg/best.pt
+  env:
+    SED_TIME_POOL: 2
+  args:
+    manifest: work/train/train_split.jsonl
+    root: work/train
+    out: runs/v8_whis_lg_gold
+    val_manifest: work/train/val_split.jsonl
+    model: whisper
+    ssl_name: openai/whisper-large-v3
+    lr_encoder: 1.0e-05
+    freeze_encoder_epochs: 0
+    epochs: 2
+    batch_size: 4
+    lr: 0.0002
+    weight_decay: 0.01
+    workers: 6
+    max_dur: 10.0
+    val_frac: 0.1
+    seed: 0
+    amp: true
+    w_gold: 1.0
+    w_silver: 0.0
+    w_cat: 0.3
+    w_weak: 0.5
+    w_bound: 1.0
+    silver_edge_sec: 0.0
+    gold_only: true
+    init_from: runs/v8_whis_lg/best.pt
+    mean_teacher: false
+    w_cons: 1.0
+    ema_decay: 0.999
+    swa_start: 0
+  validation_score:
+    event_f1: 0.4230769230769231
+    segment_dice: 0.6871671436952321
+    combined: 1.1102440667721551
+    n_clips: 1111
+  decode_params:
+    high: 0.7
+    low: 0.5
+    median_k: 5
+    gap_sec: 0.1
+    min_dur: 0.1
+    expand_sec: 0.0
+    snap_win: 0.24
+    min_peak: 0.1

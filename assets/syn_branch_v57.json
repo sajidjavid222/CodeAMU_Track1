@@ -1,0 +1,22 @@
+{
+  "members": [
+    "bg_lg3_syn",
+    "bg_lg3_syn_gold",
+    "cb_s7",
+    "cb_s7_gold",
+    "gv_lg3_A",
+    "gv_lg3_B",
+    "gv_med_A",
+    "gv_med_B",
+    "gv_sml_A",
+    "gv_sml_B"
+  ],
+  "combined": 1.9711451084790133,
+  "event_f1": 0.990072202166065,
+  "segment_dice": 0.9810729063129483,
+  "split": [
+    0.06,
+    0.1,
+    0.4
+  ]
+}

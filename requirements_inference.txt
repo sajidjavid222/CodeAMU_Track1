@@ -1,0 +1,11 @@
+# Python 3.10.12, CUDA 12.8 (cu128 wheels: pip install --index-url https://download.pytorch.org/whl/cu128 torch==2.11.0 torchaudio==2.11.0)
+torch==2.11.0
+torchaudio==2.11.0
+numpy==2.2.6
+scipy==1.15.3
+soundfile==0.14.0
+librosa==0.11.0
+transformers==5.15.0
+scikit-learn==1.7.2        # exact: assets/*.pkl (router, boundary regressor) are pickled with this version
+joblib==1.5.3
+huggingface_hub==1.27.0
