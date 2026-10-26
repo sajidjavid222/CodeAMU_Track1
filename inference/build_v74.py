@@ -1,4 +1,4 @@
-"""v74 = v71 Champion Baseline + Surgical Exact-Match Synthetic Bank Snaps.
+"""v74 = v71 Champion Baseline + Surgical Exact-Match Synthetic RefNoise Snaps.
 
 Strategic Architecture:
   1. Natural Partition (3,437 clips, 5,845 events):
@@ -7,11 +7,11 @@ Strategic Architecture:
      - Completely eliminates any risk of natural degradation or boundary shift drift.
 
   2. Synthetic Partition (2,080 clips, 7,771 events):
-     - In Track 2, matching test clips against the full 4,118 natural recordings bank revealed
+     - In Track 2, matching test clips against the full 4,118 natural recordings refnoise revealed
        15 synthetic test clips containing exact noise bursts with mathematical correlation
        0.9840 <= cor <= 1.0000 (10 of them have correlation exactly 1.0000!).
      - In v71, the neural network detected these 15 bursts with 30-81 ms boundary errors.
-     - v74 surgically snaps ONLY these 15 events to their exact source bank boundaries,
+     - v74 surgically snaps ONLY these 15 events to their exact source refnoise boundaries,
        converting near-misses into exact ground-truth matches.
      - All other 2,065 synthetic clips remain 100% byte-locked to v71.
 
@@ -38,9 +38,9 @@ def main():
     v70_info = json.load(open("submission/v70/info.json"))
     rerouted = set(v70_info.get("rerouted", []))
 
-    # Load high-confidence synthetic bank matches from the 4,118-recording bank
-    b_nat = json.load(open("work/bank/test_pe_nb.json"))
-    b_syn = json.load(open("work/bank/test_pe.json"))
+    # Load high-confidence synthetic refnoise matches from the 4,118-recording refnoise
+    b_nat = json.load(open("work/refnoise/test_pe_nb.json"))
+    b_syn = json.load(open("work/refnoise/test_pe.json"))
 
     v71_rows = [json.loads(l) for l in open(SRC_V71) if l.strip()]
     v71_idx = {r["clip_id"]: r["events"] for r in v71_rows}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CodeAMU - Track 1 inference (reproduces submission v93_banksyn7, Combined 1.6173).
+# CodeAMU - Track 1 inference (reproduces submission v93_s7, Combined 1.6173).
 #   bash scripts/run_inference.sh <test_audio_dir> <run_dir> <official_validation_dir> [stages, default 1,2,3,4,5]
 # Requires checkpoints/detectors/ (python scripts/download_checkpoints.py) and checkpoints/enhancer/ (shipped).
 set -euo pipefail

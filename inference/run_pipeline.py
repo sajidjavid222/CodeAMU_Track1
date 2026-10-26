@@ -4,19 +4,19 @@
     python inference/run_pipeline.py --audio_dir <test WAV folder> --run_dir <work folder> \
         --val_dir <official validation folder> [--checkpoints checkpoints] [--stages 1,2,3,4,5]
 
-Reproduces submission v93_banksyn7 (Event F1 0.7895, Segment Dice 0.8278, Combined 1.6173) on the Phase 2 test set.
+Reproduces submission v93_s7 (Event F1 0.7895, Segment Dice 0.8278, Combined 1.6173) on the Phase 2 test set.
 Every stage skips work whose output already exists (resumable). Stages (all run with cwd = --run_dir, the scripts
 read/write run_dir/work/... and run_dir/submission/...):
 
   1 detectors : 24 sound-event detectors -> 20 ms (10 ms for hr_*) frame probabilities  work/evalprobs/<m>.npz  [GPU]
   2 decode    : synthetic/natural router + natural / synthetic ensembles + decoding    submission/v67, routing,
                 natural ensemble tracks (work/eval_syn_pred_fixed.json, work/ens_nat_eval_v60.npz)
-  3 bank      : match every clip against the validation noise bank (synthetic bank, synthetic+natural bank,
-                natural-routed clips)                                                 work/bank/*.json
-  4 spans     : GLS bank subtraction on synthetic clips -> subtracted spans           work/t2_banksub_*/
-  5 refine    : v69 (bank snaps) -> v70 (natural bank merge) -> v71 -> v74 -> v76 -> v80 -> v93 (natural post-processing)
-                -> banksyn2 (energy-verified bank spans) -> noise meter (Track 2 enhancer) -> banksyn3 (drop speech-only
-                synthetic false alarms) -> banksyn4/5 (bank spans in natural clips) -> banksyn7 (fill empty clips)
+  3 refnoise      : match every clip against the validation reference noise (synthetic refnoise, synthetic+natural refnoise,
+                natural-routed clips)                                                 work/refnoise/*.json
+  4 spans     : GLS refnoise subtraction on synthetic clips -> subtracted spans           work/refnoise_sub_*/
+  5 refine    : v69 (refnoise snaps) -> v70 (natural refnoise merge) -> v71 -> v74 -> v76 -> v80 -> v93 (natural post-processing)
+                -> s2 (energy-verified refnoise spans) -> noise meter (Track 2 enhancer) -> s3 (drop speech-only
+                synthetic false alarms) -> s4/5 (refnoise spans in natural clips) -> s7 (fill empty clips)
 Final output: <run_dir>/output/predictions.jsonl and submission.zip.
 
 --track2_inputs (with stages 1,2): the event timestamps and routing the CodeAMU Track 2 system takes as input, as made for
@@ -42,9 +42,9 @@ ASSETS = ["synth_clf.pkl", "boundary_regressor.pkl", "route_v43.json", "syn_bran
 GLS_TAG = "gate0.5_gls_grow_th0.25_white2"
 REFINE = [("v69", ["build_v68.py", "v69"]), ("v70", ["build_v68.py", "v70"]), ("v71", ["build_v71.py"]),
           ("v74", ["build_v74.py"]), ("v76", ["build_v76.py"]), ("v80", ["build_v80.py"]), ("v93", ["build_v93.py"]),
-          ("v93_banksyn2", ["build_v93_banksyn2.py", "submission/v93"]), ("probe", ["t1_syn_fp_probe.py"]),
-          ("v93_banksyn3", ["build_v93_banksyn3.py"]), ("v93_banksyn4", ["build_v93_banksyn4.py"]),
-          ("v93_banksyn5", ["build_v93_banksyn5.py"]), ("v93_banksyn7", ["build_v93_banksyn7.py", "0.20"])]
+          ("v93_s2", ["build_v93_s2.py", "submission/v93"]), ("probe", ["t1_syn_fp_probe.py"]),
+          ("v93_s3", ["build_v93_s3.py"]), ("v93_s4", ["build_v93_s4.py"]),
+          ("v93_s5", ["build_v93_s5.py"]), ("v93_s7", ["build_v93_s7.py", "0.20"])]
 
 
 def run(cmd, env, cwd):
@@ -56,14 +56,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--audio_dir", required=True)
     ap.add_argument("--run_dir", required=True)
-    ap.add_argument("--val_dir", required=True, help="official validation folder (noise bank source)")
+    ap.add_argument("--val_dir", required=True, help="official validation folder (reference noise source)")
     ap.add_argument("--checkpoints", default=f"{ROOT}/checkpoints")
     ap.add_argument("--stages", default="1,2,3,4,5")
     ap.add_argument("--track2_inputs", action="store_true", help="also write the CodeAMU Track 2 inputs (after stage 2)")
     a = ap.parse_args()
     stages = {int(s) for s in a.stages.split(",")}
     rd = os.path.abspath(a.run_dir); audio = os.path.abspath(a.audio_dir); ck = os.path.abspath(a.checkpoints)
-    for d in ("work/evalprobs", "work/bank", "submission", "output", "data"):
+    for d in ("work/evalprobs", "work/refnoise", "submission", "output", "data"):
         os.makedirs(f"{rd}/{d}", exist_ok=True)
     if not os.path.exists(f"{rd}/data/validation"):
         os.symlink(os.path.abspath(a.val_dir), f"{rd}/data/validation")
@@ -103,17 +103,17 @@ def main():
         print(f"Track 2 inputs: {rd}/output/track2_inputs/", flush=True)
     if 3 in stages:
         for name, opts in (("test_pe", ["test", "pe"]), ("test_pe_nb", ["test", "pe", "nb"]), ("testnat_pe", ["testnat", "pe"])):
-            if not os.path.exists(f"{rd}/work/bank/{name}.json"):
-                run([PY, f"{HERE}/bank_match.py"] + opts, env, rd)
-    if 4 in stages and not os.path.exists(f"{rd}/work/t2_banksub_{GLS_TAG}/subtracted_spans.json"):
-        run([PY, f"{HERE}/t2_bank_subtract.py", "test", "white2", "th0.25", "gls", "grow", "gate0.5"], env, rd)
+            if not os.path.exists(f"{rd}/work/refnoise/{name}.json"):
+                run([PY, f"{HERE}/refnoise_match.py"] + opts, env, rd)
+    if 4 in stages and not os.path.exists(f"{rd}/work/refnoise_sub_{GLS_TAG}/subtracted_spans.json"):
+        run([PY, f"{HERE}/t2_refnoise_subtract.py", "test", "white2", "th0.25", "gls", "grow", "gate0.5"], env, rd)
     if 5 in stages:
         for tag, cmd in REFINE:
             done = f"{rd}/work/t1_syn_unsupported_D.json" if tag == "probe" else f"{rd}/submission/{tag}/predictions.jsonl"
             if not os.path.exists(done):
                 run([PY, f"{HERE}/{cmd[0]}"] + cmd[1:], env, rd)
         for f in ("predictions.jsonl", "submission.zip"):
-            shutil.copy(f"{rd}/submission/v93_banksyn7/{f}", f"{rd}/output/{f}")
+            shutil.copy(f"{rd}/submission/v93_s7/{f}", f"{rd}/output/{f}")
         print(f"final: {rd}/output/submission.zip", flush=True)
 
 

@@ -81,7 +81,7 @@ def main():
     v70_info = json.load(open("submission/v70/info.json"))
     rerouted = set(v70_info.get("rerouted", []))
     nat_cache = dict(np.load("work/ens_nat_eval_v60.npz"))
-    b_nat = json.load(open("work/bank/test_pe_nb.json"))
+    b_nat = json.load(open("work/refnoise/test_pe_nb.json"))
 
     v74_rows = [json.loads(l) for l in open(SRC_V74) if l.strip()]
     out_rows = []
@@ -192,7 +192,7 @@ def main():
 
     print(f"v76 successfully built!")
     print(f"Total clips: {len(out_rows)} (Synthetic: {n_syn}, Natural: {n_nat})")
-    print(f"Synthetic snaps added: {n_syn_snapped} events snapped to exact bank sources")
+    print(f"Synthetic snaps added: {n_syn_snapped} events snapped to exact refnoise sources")
     print(f"Total natural events: v74={total_events_nat_v74} -> v76={total_events_nat_v76} (pruned {n_nat_pruned} redundant duplicates)")
     print(f"Natural clips affected: {len(pruned_details)} / {n_nat} ({len(pruned_details)/n_nat*100:.2f}%)")
     print(f"Submission package saved to {zip_path}")

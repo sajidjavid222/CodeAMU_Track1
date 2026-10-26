@@ -6,9 +6,9 @@ clean speech gives unlimited clips whose onsets/offsets are exact by
 construction -- and 2,080 of the 5,517 eval clips (38%) are built the same way
 ("clean speech with noise added synthetically").
 
-Banks are harvested from GOLD clips only, since those timestamps are verified:
-  * noise bank  -- the annotated event spans themselves
-  * clean bank  -- the gaps between events, where annotators confirmed silence
+Pools are harvested from GOLD clips only, since those timestamps are verified:
+  * noise pool  -- the annotated event spans themselves
+  * clean pool  -- the gaps between events, where annotators confirmed silence
                    of events (>= --min-clean seconds)
 
 Placement deliberately over-samples SHORT inter-event gaps: 29% of real gold
@@ -41,7 +41,7 @@ def fade(x, n=240):                      # 15 ms cosine edges
 
 
 def harvest(records, root, min_clean=2.5, min_noise=0.15, max_clips=0):
-    """-> (noise_bank[(audio, category)], clean_bank[audio])"""
+    """-> (noise_pool[(audio, category)], clean_pool[audio])"""
     noise, clean = [], []
     gold = [r for r in records if r.get("tier") == "gold" and r.get("events")]
     if max_clips:
@@ -179,15 +179,15 @@ def main():
     rng = random.Random(args.seed)
     np.random.seed(args.seed)
     recs = [json.loads(l) for l in open(args.manifest)]
-    print("harvesting banks from gold clips...", flush=True)
+    print("harvesting pools from gold clips...", flush=True)
     noise, clean = harvest(recs, args.root, args.min_clean,
                            max_clips=args.harvest_clips)
-    print(f"noise bank: {len(noise)} segs "
+    print(f"noise pool: {len(noise)} segs "
           f"({sum(len(a) for a, _ in noise)/SR/3600:.2f} h)")
-    print(f"clean bank: {len(clean)} segs "
+    print(f"clean pool: {len(clean)} segs "
           f"({sum(len(a) for a in clean)/SR/3600:.2f} h)")
     if not noise or not clean:
-        raise SystemExit("empty bank -- cannot synthesise")
+        raise SystemExit("empty pool -- cannot synthesise")
 
     audio_dir = os.path.join(args.out, "audio")
     os.makedirs(audio_dir, exist_ok=True)

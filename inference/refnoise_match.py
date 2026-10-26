@@ -1,18 +1,18 @@
-"""Locate synthetic noise events by matching against the validation noise bank.
+"""Locate synthetic noise events by matching against the validation reference noise.
 
 The synthetic clips are clean speech plus noise clips pasted WHOLE from a finite
-bank: in validation every sampled event has a sample-identical copy in another
+refnoise: in validation every sampled event has a sample-identical copy in another
 clip (verified correlation 1.000, different speech underneath, same duration and
-start to <=5 ms). Validation gives the bank for free: noise = mixture - clean,
+start to <=5 ms). Validation gives the refnoise for free: noise = mixture - clean,
 cut at the labelled timestamps.
 
-For each clip we cross-correlate the mixture against every bank template
+For each clip we cross-correlate the mixture against every refnoise template
 (batched FFT at 8 kHz), keep peaks by normalised correlation, then greedily pick
 non-overlapping matches by explained energy. A match gives the event's onset and
 offset at sample precision.
 
-    python src/bank_match.py val    # leave-one-clip-out on validation -> work/bank/val.json
-    python src/bank_match.py test   # test synthetic clips             -> work/bank/test.json
+    python src/refnoise_match.py val    # leave-one-clip-out on validation -> work/refnoise/val.json
+    python src/refnoise_match.py test   # test synthetic clips             -> work/refnoise/test.json
 """
 from __future__ import annotations
 
@@ -30,11 +30,11 @@ V = "data/validation"
 TEST = os.environ.get("T1_TEST_AUDIO", "test_audio")          # folder of the test WAVs
 SR = 8000
 TH_KEEP = 0.20          # candidate floor; the working threshold is chosen on validation
-OUT = "work/bank"
-torch.set_num_threads(int(os.environ.get("BANK_THREADS", "32")))
+OUT = "work/refnoise"
+torch.set_num_threads(int(os.environ.get("REFNOISE_THREADS", "32")))
 
 
-NB = "nb" in sys.argv[2:]      # add validation NATURAL labelled events to the bank
+NB = "nb" in sys.argv[2:]      # add validation NATURAL labelled events to the refnoise
 PE = "pe" in sys.argv[2:]      # pre-emphasis whitening: exact copies stay exact (linear filter),
                                  # chance alignments of tonal / low-band sounds and speech drop
 
@@ -50,7 +50,7 @@ def read8k(path):
     return white(ss.resample_poly(x, SR, sr) if sr != SR else x)
 
 
-def build_bank():
+def build_templates():
     md = [r for r in json.load(open(f"{V}/validationMetadata.json")) if r.get("syntheticData")]
     raw = []
     for r in md:
@@ -67,8 +67,8 @@ def build_bank():
             if len(t) >= int(0.05 * SR) and np.linalg.norm(t) > 1e-6:
                 raw.append((t / np.linalg.norm(t), f[:-4], float(e["start"]), float(e["end"])))
     if NB:
-        # the bank was CUT from natural recordings at their labelled edges, so every labelled
-        # event of a validation NATURAL clip is a candidate bank recording as-is
+        # the refnoise was CUT from natural recordings at their labelled edges, so every labelled
+        # event of a validation NATURAL clip is a candidate refnoise recording as-is
         for r in json.load(open(f"{V}/validationMetadata.json")):
             if r.get("syntheticData"):
                 continue
@@ -81,36 +81,36 @@ def build_bank():
                     raw.append((t / np.linalg.norm(t), f[:-4], float(e["start"]), float(e["end"])))
     # dedupe identical recordings (same length +-8 samples, normalised dot >= 0.995)
     raw.sort(key=lambda z: len(z[0]))
-    bank, src, meta = [], [], []
+    refnoise, src, meta = [], [], []
     for t, cid, s0, s1 in raw:
         hit = None
-        for j in range(len(bank) - 1, -1, -1):
-            if len(bank[j]) < len(t) - 8:
+        for j in range(len(refnoise) - 1, -1, -1):
+            if len(refnoise[j]) < len(t) - 8:
                 break
-            m = min(len(t), len(bank[j]), 4000)
-            if abs(np.dot(t[:m], bank[j][:m])) / (np.linalg.norm(t[:m]) * np.linalg.norm(bank[j][:m]) + 1e-12) >= 0.995:
+            m = min(len(t), len(refnoise[j]), 4000)
+            if abs(np.dot(t[:m], refnoise[j][:m])) / (np.linalg.norm(t[:m]) * np.linalg.norm(refnoise[j][:m]) + 1e-12) >= 0.995:
                 hit = j
                 break
         if hit is None:
-            bank.append(t); src.append({cid}); meta.append((cid, s0, s1))   # where template k came from
+            refnoise.append(t); src.append({cid}); meta.append((cid, s0, s1))   # where template k came from
         else:
             src[hit].add(cid)
-    print(f"bank: {len(raw)} labelled events -> {len(bank)} distinct recordings", flush=True)
-    build_bank.meta = meta
-    return bank, src
+    print(f"refnoise: {len(raw)} labelled events -> {len(refnoise)} distinct recordings", flush=True)
+    build_templates.meta = meta
+    return refnoise, src
 
 
 class Matcher:
-    def __init__(self, bank):
-        self.bank = bank
-        self.lens = np.array([len(t) for t in bank])
+    def __init__(self, refnoise):
+        self.refnoise = refnoise
+        self.lens = np.array([len(t) for t in refnoise])
         self.cache = {}
 
     def tf(self, N):
         if N not in self.cache:
             self.cache.clear()
-            T = torch.zeros(len(self.bank), N, dtype=torch.float32)
-            for i, t in enumerate(self.bank):
+            T = torch.zeros(len(self.refnoise), N, dtype=torch.float32)
+            for i, t in enumerate(self.refnoise):
                 T[i, :len(t)] = torch.from_numpy(t.astype(np.float32))
             self.cache[N] = torch.fft.rfft(T, n=N)
         return self.cache[N]
@@ -122,8 +122,8 @@ class Matcher:
         X = torch.fft.rfft(torch.from_numpy(x.astype(np.float32)), n=N)
         cs = np.concatenate([[0.0], np.cumsum(x.astype(np.float64) ** 2)])
         cands = []
-        for s in range(0, len(self.bank), chunk):
-            idx = np.arange(s, min(s + chunk, len(self.bank)))
+        for s in range(0, len(self.refnoise), chunk):
+            idx = np.arange(s, min(s + chunk, len(self.refnoise)))
             xc = torch.fft.irfft(X[None, :] * torch.conj(Tf[idx]), n=N)[:, :Lx].numpy()
             for r, k in enumerate(idx):
                 n = self.lens[k]
@@ -151,8 +151,8 @@ class Matcher:
 def main():
     mode = sys.argv[1]
     os.makedirs(OUT, exist_ok=True)
-    bank, src = build_bank()
-    M = Matcher(bank)
+    refnoise, src = build_templates()
+    M = Matcher(refnoise)
     res, t0 = {}, time.time()
     if mode == "val":
         md = [r for r in json.load(open(f"{V}/validationMetadata.json")) if r.get("syntheticData")]

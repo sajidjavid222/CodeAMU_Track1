@@ -1,4 +1,4 @@
-"""Merge noise-bank matches (src/bank_match.py) into synthetic-branch predictions.
+"""Merge reference-noise matches (src/refnoise_match.py) into synthetic-branch predictions.
 
 A match is trusted when its normalised correlation >= th. For each predicted event:
   split  if >= 2 non-overlapping trusted matches (cor >= split_th) sit inside it and
@@ -7,10 +7,10 @@ A match is trusted when its normalised correlation >= th. For each predicted eve
          (gate="overlap": overlap > half the shorter one; gate="tol": both edges
          within max(tol_abs, tol_rel * duration) -- stops a long correct event being
          pulled onto a short crop of the same recording)
-  keep   otherwise leave it as predicted (the bank may not hold that recording)
+  keep   otherwise leave it as predicted (the refnoise may not hold that recording)
 Then trusted matches with cor >= add_th that overlap nothing are added (misses).
 
-`python src/bank_merge.py` scores a grid on validation, leave-one-clip-out, against
+`python src/refnoise_merge.py` scores a grid on validation, leave-one-clip-out, against
 the v67 synthetic OOF predictions, per cross-fit fold.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ import json
 # validated on LOO validation: synthetic OOF +0.0131 (fold A +0.0112, B +0.0149) over v67;
 # th_ov 0.8 and 0.9 score identically -- 0.9 taken for match precision (98.9% exact)
 V68 = dict(th=0.5, gate="hyb", tol_abs=0.15, tol_rel=0.3, th_ov=0.9, ratio=0.0)
-# V69: for WHITENED matches (bank_match.py ... pe): pre-emphasis lifts match precision at
+# V69: for WHITENED matches (refnoise_match.py ... pe): pre-emphasis lifts match precision at
 # cor>=0.5 from 65.8% to 98.4%, which makes adding unpredicted matches safe. LOO val
 # synthetic 1.98842 vs V68 1.98686 (fold A +0.0003, B +0.0027); add_th plateau 0.6-0.8.
 V69 = dict(V68, th=0.4, add_th=0.7)
@@ -77,7 +77,7 @@ def merge(pred, matches, th=0.6, gate="overlap", tol_abs=0.1, tol_rel=0.2, split
 
 
 def merge_nat(pred, matches, th=0.8, tol_abs=0.1, tol_rel=0.3, add=True):
-    """Natural clips: the bank was CUT from natural recordings at their labelled edges,
+    """Natural clips: the refnoise was CUT from natural recordings at their labelled edges,
     so a trusted match is an exact natural event. Natural labels nest (a long host can
     contain a short event), so a match never shrinks a longer prediction that contains
     it: it replaces only a prediction whose both edges already agree within tolerance,
@@ -96,7 +96,7 @@ def merge_nat(pred, matches, th=0.8, tol_abs=0.1, tol_rel=0.3, add=True):
 
 def natural_eval():
     """Honest natural OOF (v60 decode on ens_nat_val_oof_honest + cb_big/cb_s7), per fold,
-    with and without bank matches from bank_match.py valnat pe."""
+    with and without refnoise matches from refnoise_match.py valnat pe."""
     import pickle
     import numpy as np
     from metrics import score_submission
@@ -144,7 +144,7 @@ def natural_eval():
                             new.append((s * FRAME, f2 * FRAME))
         pred[c] = [tuple(x) for x in apply_boundary_trim(sorted(set(new)), p, on, off, d, reg,
                                                           min_shift=-0.20, max_shift=-0.005)]
-    bank = json.load(open("work/bank/valnat_pe.json"))
+    refnoise = json.load(open("work/refnoise/valnat_pe.json"))
 
     def score(out):
         r = {}
@@ -157,7 +157,7 @@ def natural_eval():
     for th in (0.6, 0.7, 0.8, 0.9):
         for ta, tr in ((0.1, 0.3), (0.2, 0.5)):
             for add in (False, True):
-                out = {c: merge_nat(pred[c], bank.get(c, []), th, ta, tr, add) for c in refs}
+                out = {c: merge_nat(pred[c], refnoise.get(c, []), th, ta, tr, add) for c in refs}
                 r, s = score(out)
                 print(f"  th {th} tol {ta}/{tr} add {add!s:5}: A {r['A'] - b['A']:+.5f} B {r['B'] - b['B']:+.5f} | "
                       f"{s['combined']:.5f} F1 {s['event_f1']:.5f} Dice {s['segment_dice']:.5f}", flush=True)
@@ -188,13 +188,13 @@ if __name__ == "__main__":
         e = split_events(e, on, off, S.FRAME, split_thr=P['st'], min_sub=P['ms'], max_pair_gap=P['gp'])
         pred[c] = [tuple(x) for x in dur_snap(e, on, off, S.FRAME, duration=d, split=P['split'], snap_short=P['ss'],
                                               peak_short=P['ps'], snap_long=P['sl'], peak_long=P['pl'])]
-    bank = json.load(open("work/bank/val_pe.json" if PEB else "work/bank/val.json"))
+    refnoise = json.load(open("work/refnoise/val_pe.json" if PEB else "work/refnoise/val.json"))
     n_ref = sum(len(v) for v in S.refs.values())
-    print(f"bank file: {'val_pe.json (whitened)' if PEB else 'val.json'}")
+    print(f"refnoise file: {'val_pe.json (whitened)' if PEB else 'val.json'}")
     for q in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
         n_m = n_ok = hit_r = 0
         for c, R in S.refs.items():
-            ms = [m for m in bank.get(c, []) if m["cor"] >= q]
+            ms = [m for m in refnoise.get(c, []) if m["cor"] >= q]
             n_m += len(ms)
             n_ok += sum(1 for m in ms if any(abs(m["onset"] - a) <= 0.01 and abs(m["offset"] - b) <= 0.01 for a, b in R))
             hit_r += sum(1 for a, b in R if any(abs(m["onset"] - a) <= 0.01 and abs(m["offset"] - b) <= 0.01 for m in ms))
@@ -214,11 +214,11 @@ if __name__ == "__main__":
         def hit(e, R):
             return any(abs(e[0] - a) <= max(0.2 * (b - a), 0.05) and abs(e[1] - b) <= max(0.2 * (b - a), 0.05)
                        for a, b in R)
-        out = {c: merge(pred[c], bank.get(c, []), **V68) for c in S.refs}
+        out = {c: merge(pred[c], refnoise.get(c, []), **V68) for c in S.refs}
         fp_m = fp_u = fn_m = fn_u = tp = 0
         best_fn = []
         for c, R in S.refs.items():
-            P0 = set(pred[c]); ms = bank.get(c, [])
+            P0 = set(pred[c]); ms = refnoise.get(c, [])
             for e in out[c]:
                 if hit(e, R): tp += 1
                 elif e in P0: fp_u += 1          # unmoved prediction, not a real event
@@ -230,7 +230,7 @@ if __name__ == "__main__":
                     if any(abs(m["onset"] - ra) <= 0.01 and abs(m["offset"] - rb) <= 0.01 for m in ms): fn_m += 1
                     else: fn_u += 1
         print(f"after V68 on validation: TP {tp} | FP moved {fp_m}, FP unmoved {fp_u} | "
-              f"FN with an exact bank match {fn_m}, FN without {fn_u}")
+              f"FN with an exact refnoise match {fn_m}, FN without {fn_u}")
         print("  best overlapping match cor for each FN:", sorted(round(x, 2) for x in best_fn))
         if "detail" in sys.argv_full:
             for c, R in S.refs.items():
@@ -242,20 +242,20 @@ if __name__ == "__main__":
                 print("    pred:", [(round(a, 3), round(b, 3)) for a, b in sorted(pred[c])])
                 print("    v68 :", [(round(a, 3), round(b, 3)) for a, b in sorted(out[c])])
                 for k, (ea, eb) in errs:
-                    near = sorted([m for m in bank.get(c, []) if _ov((ea, eb), (m["onset"], m["offset"])) > -0.05],
+                    near = sorted([m for m in refnoise.get(c, []) if _ov((ea, eb), (m["onset"], m["offset"])) > -0.05],
                                   key=lambda m: -m["cor"])[:3]
                     print(f"    {k} ({ea:.3f},{eb:.3f}) matches:",
                           [(round(m['onset'], 3), round(m['offset'], 3), m['cor']) for m in near])
         unm = [(c, p) for c in S.refs for p in out[c] if p in set(pred[c])]
         print(f"  unmoved predictions: {len(unm)}, of which real events {sum(1 for c, p in unm if hit(p, S.refs[c]))}")
         for dt in (0.2, 0.3, 0.4, 0.5):
-            o2 = {c: merge(pred[c], bank.get(c, []), **dict(V68, drop_th=dt)) for c in S.refs}
+            o2 = {c: merge(pred[c], refnoise.get(c, []), **dict(V68, drop_th=dt)) for c in S.refs}
             r, s = score(o2)
             print(f"  + drop unmatched (cor<{dt}): A {r['A'] - b['A']:+.5f} B {r['B'] - b['B']:+.5f} | "
                   f"{s['combined']:.5f} F1 {s['event_f1']:.5f} Dice {s['segment_dice']:.5f}")
         sys.exit()
     if ONLY_V68:
-        out = {c: merge(pred[c], bank.get(c, []), **V68) for c in S.refs}
+        out = {c: merge(pred[c], refnoise.get(c, []), **V68) for c in S.refs}
         r, s = score(out)
         n = sum(len(v) for v in pred.values())
         mv = sum(1 for c in S.refs for e in out[c] if e not in set(pred[c]))
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     grid += [dict(V68, th=t, add_th=a) for t in (0.4, 0.5) for a in (0.6, 0.7, 0.8)]
     grid += [dict(V68, th=0.4, add_th=0.7, th_ov=o) for o in (0.7, 0.8)]
     for cf in grid:
-        out = {c: merge(pred[c], bank.get(c, []), **cf) for c in S.refs}
+        out = {c: merge(pred[c], refnoise.get(c, []), **cf) for c in S.refs}
         r, s = score(out)
         print(f"  {json.dumps(cf):92} A {r['A'] - b['A']:+.5f} B {r['B'] - b['B']:+.5f} | "
               f"{s['combined']:.5f} F1 {s['event_f1']:.5f} Dice {s['segment_dice']:.5f}", flush=True)

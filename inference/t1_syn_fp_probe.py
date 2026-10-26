@@ -1,8 +1,8 @@
-"""Are v93_banksyn2's 75 bank-unsupported synthetic predictions real noise? Track 2 enhancer as a noise meter.
+"""Are v93_s2's 75 refnoise-unsupported synthetic predictions real noise? Track 2 enhancer as a noise meter.
 
 Per clip: enhance with the p2mix ensemble (whole-clip window), D = 10log10(E_removed / E_mix) per 10 ms frame.
-Score each region by mean D. Controls in the same clips: bank spans (cor >= 0.6: noise present) and random
-0.3 s stretches with no prediction and no bank span (speech only).
+Score each region by mean D. Controls in the same clips: refnoise spans (cor >= 0.6: noise present) and random
+0.3 s stretches with no prediction and no refnoise span (speech only).
     python src/t1_syn_fp_probe.py
 """
 import json
@@ -23,9 +23,9 @@ SR, HOP = 16000, 160
 
 def main():
     syn = json.load(open("work/eval_syn_pred_fixed.json")); rer = set(json.load(open("submission/v70/info.json")).get("rerouted", []))
-    P = {json.loads(l)["clip_id"]: [(e["onset"], e["offset"]) for e in json.loads(l)["events"]] for l in open("submission/v93_banksyn2/predictions.jsonl")}
-    M = json.load(open("work/bank/test_pe.json"))
-    S = json.load(open("work/t2_banksub_gate0.5_gls_grow_th0.25_white2/subtracted_spans.json"))
+    P = {json.loads(l)["clip_id"]: [(e["onset"], e["offset"]) for e in json.loads(l)["events"]] for l in open("submission/v93_s2/predictions.jsonl")}
+    M = json.load(open("work/refnoise/test_pe.json"))
+    S = json.load(open("work/refnoise_sub_gate0.5_gls_grow_th0.25_white2/subtracted_spans.json"))
     E.load_models([os.path.join(os.environ.get("T1_ENHANCER_DIR", "checkpoints/enhancer"), f"t2_model_{i}.pt") for i in range(3)])
     rng = np.random.default_rng(0)
     sus, pos, neg = [], [], []
@@ -57,13 +57,14 @@ def main():
                     neg.append(md(a, b)); break
     pos, neg = np.array(pos), np.array(neg)
     s = np.array([v[3] for v in sus])
-    q = lambda v: " ".join(f"{np.percentile(v, p):6.1f}" for p in (10, 25, 50, 75, 90))
+    q = lambda v: " ".join(f"{np.percentile(v, p):6.1f}" for p in (10, 25, 50, 75, 90)) if len(v) else "     -"
+    fr = lambda v, t: f"{np.mean(v < t):.2f}" if len(v) else "   -"   # small inputs can leave a group empty
     print(f"removed-energy share D (dB), percentiles 10/25/50/75/90")
-    print(f"  bank-span regions (noise)      n={len(pos):3d}: {q(pos)}")
+    print(f"  refnoise-span regions (noise)  n={len(pos):3d}: {q(pos)}")
     print(f"  free stretches (speech only)   n={len(neg):3d}: {q(neg)}")
     print(f"  UNSUPPORTED predictions        n={len(s):3d}: {q(s)}")
     for thr in (-15, -12, -10, -8, -6):
-        print(f"  D < {thr:4d} dB: unsupported {int(np.sum(s < thr)):3d}/{len(s)} | noise regions {np.mean(pos < thr):.2f} | speech regions {np.mean(neg < thr):.2f}")
+        print(f"  D < {thr:4d} dB: unsupported {int(np.sum(s < thr)):3d}/{len(s)} | noise regions {fr(pos, thr)} | speech regions {fr(neg, thr)}")
     json.dump([{"clip_id": c, "onset": a, "offset": b, "D": d} for c, a, b, d in sus], open("work/t1_syn_unsupported_D.json", "w"), indent=1)
 
 

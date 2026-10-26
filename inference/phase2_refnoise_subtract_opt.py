@@ -1,9 +1,9 @@
-"""Phase 2 Bank Subtraction Optimized (Unconstrained Engine).
+"""Phase 2 Reference-Noise Subtraction Optimized (Unconstrained Engine).
 
 Applies exact mathematical noise subtraction to all 1,635 matched synthetic clips in Phase 2
-using the verified primary synthetic bank matches from work/bank/phase2_pe.json at threshold 0.45 (9,065 bursts).
+using the verified primary synthetic refnoise matches from work/refnoise/phase2_pe.json at threshold 0.45 (9,065 bursts).
 Keeps the unconstrained gain formula that achieves 48.5 - 49.4 dB SI-SDR on validation.
-Outputs clean WAVs to work/t2_banksub_p2_opt/ and subtracted_spans.json.
+Outputs clean WAVs to work/refnoise_sub_p2_opt/ and subtracted_spans.json.
 """
 from __future__ import annotations
 
@@ -17,11 +17,11 @@ import soundfile as sf
 
 sys.argv = [sys.argv[0], "x", "pe"]
 sys.path.insert(0, os.path.dirname(__file__))
-import bank_match as BM
+import refnoise_match as BM
 
 V = "data/validation"
 P2_AUDIO = os.environ.get("T1_TEST_AUDIO", "test_audio")
-OUT_DIR = "work/t2_banksub_p2_opt"
+OUT_DIR = "work/refnoise_sub_p2_opt"
 SR = 16000
 LAG = 32
 TH_SYNTH = 0.45
@@ -29,10 +29,10 @@ TH_SYNTH = 0.45
 _raw_cache = {}
 
 
-def load_synth_bank():
+def load_synth_templates():
     BM.NB = False
-    BM.build_bank()
-    return list(BM.build_bank.meta)
+    BM.build_templates()
+    return list(BM.build_templates.meta)
 
 
 def get_template(k: int, meta: list) -> np.ndarray:
@@ -95,11 +95,11 @@ def subtract_clip(y: np.ndarray, matches: list[dict], meta_synth: list) -> tuple
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    print("Loading synthetic noise bank templates...", flush=True)
-    meta_synth = load_synth_bank()
+    print("Loading synthetic reference noise templates...", flush=True)
+    meta_synth = load_synth_templates()
     print(f"Loaded {len(meta_synth)} synthetic templates.", flush=True)
 
-    prim_synth_path = "work/bank/phase2_pe.json"
+    prim_synth_path = "work/refnoise/phase2_pe.json"
     assert os.path.exists(prim_synth_path), f"Missing {prim_synth_path}!"
     prim_synth = json.load(open(prim_synth_path))
 
@@ -135,7 +135,7 @@ def main():
     with open(spans_path, "w") as f:
         json.dump(spans, f, indent=2)
 
-    print(f"\nPhase 2 Optimized Bank Subtraction Complete!")
+    print(f"\nPhase 2 Optimized Reference-Noise Subtraction Complete!")
     print(f"Wrote {len(spans)} audio files to {OUT_DIR}/")
     print(f"Logged {n_events_subtracted} subtracted spans to {spans_path}")
 

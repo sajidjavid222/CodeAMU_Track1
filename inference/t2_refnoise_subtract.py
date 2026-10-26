@@ -1,16 +1,16 @@
-"""Track 2: remove synthetic noise by SUBTRACTING the exact bank recording.
+"""Track 2: remove synthetic noise by SUBTRACTING the exact refnoise recording.
 
-Synthetic clips = clean speech + noise recordings pasted whole from a bank that the
-validation release exposes (noise = mixture - clean). bank_match.py (whitened, "pe")
-already located every bank recording in each clip. Here, at 16 kHz:
+Synthetic clips = clean speech + noise recordings pasted whole from a refnoise that the
+validation release exposes (noise = mixture - clean). refnoise_match.py (whitened, "pe")
+already located every refnoise recording in each clip. Here, at 16 kHz:
   1. recover template k's raw waveform from its validation source clip,
   2. refine the lag within +-LAG samples of the matched position,
   3. least-squares gain, subtract -- nothing else in the clip is touched.
 Unmatched noise is left in place (no zeroing / attenuation: that is what sank the
 earlier t2_surgical_enhance.py at 15.4).
 
-    python src/t2_bank_subtract.py val    # LOO validation: SI-SDR vs the true clean refs
-    python src/t2_bank_subtract.py test   # writes work/t2_banksub/<clip>.wav + spans json
+    python src/t2_refnoise_subtract.py val    # LOO validation: SI-SDR vs the true clean refs
+    python src/t2_refnoise_subtract.py test   # writes work/refnoise_sub/<clip>.wav + spans json
 """
 from __future__ import annotations
 
@@ -29,11 +29,11 @@ OPTS = set(sys.argv[2:])        # "white": gain + lag on pre-emphasised signals 
 ITERS = next((int(o[4:]) for o in OPTS if o.startswith("iter")), 0)
 TH = next((float(o[2:]) for o in OPTS if o.startswith("th")), 0.5)
 TAG = "_".join(sorted(OPTS)) or "base"
-NBANK = "nb" in OPTS            # bank also holds validation NATURAL labelled events (bank_match ... nb)
-SUFFIX = "_pe_nb" if NBANK else "_pe"
-sys.argv = [sys.argv[0], "x", "pe"] + (["nb"] if NBANK else [])   # same bank -> same k indices
+NREFNOISE = "nb" in OPTS            # refnoise also holds validation NATURAL labelled events (refnoise_match ... nb)
+SUFFIX = "_pe_nb" if NREFNOISE else "_pe"
+sys.argv = [sys.argv[0], "x", "pe"] + (["nb"] if NREFNOISE else [])   # same refnoise -> same k indices
 sys.path.insert(0, os.path.dirname(__file__))
-import bank_match as BM                     # noqa: E402
+import refnoise_match as BM                     # noqa: E402
 
 V = "data/validation"
 SR = 16000
@@ -48,8 +48,8 @@ def si_sdr(est, ref):
 
 
 _raw = {}
-META = {}                       # "S": synthetic-only bank meta, "N": natural-augmented bank meta
-NBX = "nbx" in OPTS             # primary = synthetic-bank matches (unchanged); extra = natural-source
+META = {}                       # "S": synthetic-only refnoise meta, "N": natural-augmented refnoise meta
+NBX = "nbx" in OPTS             # primary = synthetic-refnoise matches (unchanged); extra = natural-source
 NTH = next((float(o[3:]) for o in OPTS if o.startswith("nth")), 0.9)   # matches only where nothing
                                                                        # primary matched, cor >= NTH
 
@@ -70,9 +70,9 @@ def clip_matches(cid, prim, extra, th):
 
 
 def raw_template(k, which="S"):
-    """Raw 16 kHz noise of bank template k = (mixture - clean) of its validation source."""
+    """Raw 16 kHz noise of refnoise template k = (mixture - clean) of its validation source."""
     if (which, k) not in _raw:
-        cid, s0, s1 = (META.get(which) or BM.build_bank.meta)[k]
+        cid, s0, s1 = (META.get(which) or BM.build_templates.meta)[k]
         if os.path.exists(f"{V}/syntheticNoiseAudio/{cid}.wav"):
             x, _ = sf.read(f"{V}/syntheticNoiseAudio/{cid}.wav", dtype="float64")
             c, _ = sf.read(f"{V}/syntheticCleanRefAudio/{cid}.wav", dtype="float64")
@@ -168,38 +168,38 @@ def subtract(y, matches, th, cid=None):
     return out, [(a / SR, b / SR) for a, b in spans]
 
 
-GROW = "grow" in OPTS           # "grow": the bank holds truncated excerpts of long recordings (copies
+GROW = "grow" in OPTS           # "grow": the refnoise holds truncated excerpts of long recordings (copies
 GROWN, SRC = {}, []             # cut to different lengths). Extend a matched template with a longer
                                 # copy of the same recording and cut where the target's noise ends.
 
 
-def build_grow(bank8, head=2000, min_len=4000, cor_min=0.98):
+def build_grow(refnoise8, head=2000, min_len=4000, cor_min=0.98):
     """k -> [(j, off)] with t_k[i] == scale * t_j[i + off] (16 kHz samples), found by locating k's
     first / last 0.25 s inside every other long entry (8 kHz whitened; copies correlate ~1.0)."""
-    path = f"work/bank/grow{SUFFIX}.json"
+    path = f"work/refnoise/grow{SUFFIX}.json"
     if os.path.exists(path):
         return {int(k): v for k, v in json.load(open(path)).items()}
     import torch
     torch.set_num_threads(int(os.environ.get("GROW_THREADS", "8")))
-    ks = sorted((k for k, t in enumerate(bank8) if len(t) >= min_len), key=lambda k: len(bank8[k]))
+    ks = sorted((k for k, t in enumerate(refnoise8) if len(t) >= min_len), key=lambda k: len(refnoise8[k]))
     buckets = [ks[i:i + 32] for i in range(0, len(ks), 32)]
     spec = []
     for b in buckets:
-        N = 1 << int(np.ceil(np.log2(max(len(bank8[j]) for j in b) + head)))
+        N = 1 << int(np.ceil(np.log2(max(len(refnoise8[j]) for j in b) + head)))
         T = torch.zeros(len(b), N, dtype=torch.float64)
         for r, j in enumerate(b):
-            T[r, :len(bank8[j])] = torch.from_numpy(bank8[j])
-        cs = [np.concatenate([[0.0], np.cumsum(bank8[j] ** 2)]) for j in b]
+            T[r, :len(refnoise8[j])] = torch.from_numpy(refnoise8[j])
+        cs = [np.concatenate([[0.0], np.cumsum(refnoise8[j] ** 2)]) for j in b]
         spec.append((b, N, torch.fft.rfft(T, n=N), cs))
     out = {}
     for n_done, k in enumerate(ks):
-        t = bank8[k]
+        t = refnoise8[k]
         for part, h in (("head", t[:head]), ("tail", t[-head:])):
             hn = np.linalg.norm(h)
             for b, N, Tf, cs in spec:
                 xc = torch.fft.irfft(Tf * torch.conj(torch.fft.rfft(torch.from_numpy(h), n=N)), n=N).numpy()
                 for r, j in enumerate(b):
-                    n = len(bank8[j])
+                    n = len(refnoise8[j])
                     if j == k or n < head:
                         continue
                     cor = xc[r, :n - head + 1] / (hn * np.sqrt(np.maximum(cs[r][head:] - cs[r][:-head], 1e-18)))
@@ -263,24 +263,24 @@ def _grow(out, a, t, g, k, cid):
     return lo, hi
 
 
-def load_banks(split):
+def load_refnoises(split):
     """-> (primary matches, extra natural-source matches or None)."""
     if NBX:
-        BM.NB = False; BM.build_bank(); META["S"] = BM.build_bank.meta
-        BM.NB = True; BM.build_bank(); META["N"] = BM.build_bank.meta
-        return (json.load(open(f"work/bank/{split}_pe.json")),
-                json.load(open(f"work/bank/{split}_pe_nb.json")))
-    bank8, src = BM.build_bank()
+        BM.NB = False; BM.build_templates(); META["S"] = BM.build_templates.meta
+        BM.NB = True; BM.build_templates(); META["N"] = BM.build_templates.meta
+        return (json.load(open(f"work/refnoise/{split}_pe.json")),
+                json.load(open(f"work/refnoise/{split}_pe_nb.json")))
+    refnoise8, src = BM.build_templates()
     if GROW:
         SRC[:] = src
-        GROWN.update(build_grow(bank8))
-    return json.load(open(f"work/bank/{split}{SUFFIX}.json")), None
+        GROWN.update(build_grow(refnoise8))
+    return json.load(open(f"work/refnoise/{split}{SUFFIX}.json")), None
 
 
 def main():
     if MODE == "val":
-        prim, extra = load_banks("val")
-        bank = {c: clip_matches(c, prim, extra, TH) for c in prim}
+        prim, extra = load_refnoises("val")
+        refnoise = {c: clip_matches(c, prim, extra, TH) for c in prim}
         md = [r for r in json.load(open(f"{V}/validationMetadata.json")) if r.get("syntheticData")]
         print(f"variant: {TAG}")
         for th in ((0.4, 0.5, 0.7, 0.9) if not any(o.startswith("th") for o in OPTS) else (TH,)):
@@ -292,7 +292,7 @@ def main():
                 x = x.mean(1) if x.ndim > 1 else x
                 c = c.mean(1) if c.ndim > 1 else c
                 n = min(len(x), len(c)); x, c = x[:n], c[:n]
-                y, _ = subtract(x, bank.get(cid, []), th, cid)
+                y, _ = subtract(x, refnoise.get(cid, []), th, cid)
                 s_in.append(si_sdr(x, c)); s_out.append(si_sdr(y, c))
             s_out = np.array(s_out)
             print(f"  th {th}: noisy {np.mean(s_in):6.2f} dB -> subtracted mean {s_out.mean():6.2f} dB "
@@ -300,13 +300,13 @@ def main():
                   f"<20 dB {100 * np.mean(s_out < 20):5.1f}%)", flush=True)
     else:
         th = TH
-        prim, extra = load_banks("test")
-        bank = {c: clip_matches(c, prim, extra, th) for c in prim}
-        odir = "work/t2_banksub" if TAG == "base" else f"work/t2_banksub_{TAG}"
+        prim, extra = load_refnoises("test")
+        refnoise = {c: clip_matches(c, prim, extra, th) for c in prim}
+        odir = "work/refnoise_sub" if TAG == "base" else f"work/refnoise_sub_{TAG}"
         os.makedirs(odir, exist_ok=True)
         spans = {}
         si, sn = (int(v) for v in os.environ.get("T2_SHARD", "0/1").split("/"))   # "i/n": clips i::n
-        items = sorted(bank.items())[si::sn]
+        items = sorted(refnoise.items())[si::sn]
         for i, (cid, v) in enumerate(items):
             x, sr = sf.read(f"{BM.TEST}/{cid}.wav", dtype="float64")
             x = x.mean(1) if x.ndim > 1 else x
@@ -314,7 +314,7 @@ def main():
             sf.write(f"{odir}/{cid}.wav", y.astype(np.float32), sr, subtype="FLOAT")
             spans[cid] = done
             if i % 200 == 0:
-                print(f"  {i}/{len(bank)}", flush=True)
+                print(f"  {i}/{len(refnoise)}", flush=True)
         json.dump(spans, open(f"{odir}/subtracted_spans" + (f"_{si}" if sn > 1 else "") + ".json", "w"))
         print(f"wrote {len(spans)} clips to {odir}/ (threshold {th}, variant {TAG})")
 

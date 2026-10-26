@@ -1,13 +1,13 @@
-"""v93_banksyn2 = v93 with synthetic events corrected by ENERGY-VERIFIED bank matches.
+"""v93_s2 = v93 with synthetic events corrected by ENERGY-VERIFIED refnoise matches.
 
-v93_banksyn (cor >= 0.6, no audio check) scored 1.6139 (+0.0005): the template-subtraction energy profile shows
+v93_s1 (cor >= 0.6, no audio check) scored 1.6139 (+0.0005): the template-subtraction energy profile shows
 8 of its 23 corrected spans are truncated copies / false matches (subtracting the template's tail ADDS energy).
-Validation calibration (src/t1_bank_energy_calib.py, cross-clip copies, true labels):
+Validation calibration (src/t1_refnoise_energy_calib.py, cross-clip copies, true labels):
   cor 0.45-0.60 : energy pass (any frame >= 1 dB reduction, head/tail mean >= 0 dB) 24/24 agree; fail 1/33
   cor >= 0.60   : pass at head/tail >= -1 dB 1925/1926 agree (no failures exist on validation)
-Rule: a bank span may replace an out-of-tolerance overlapping prediction, or be added where nothing is
+Rule: a refnoise span may replace an out-of-tolerance overlapping prediction, or be added where nothing is
 predicted, only if it passes the energy test. Natural clips are byte-identical to the base.
-    python src/build_v93_banksyn2.py [base=submission/v93]
+    python src/build_v93_s2.py [base=submission/v93]
 """
 import json
 import os
@@ -19,19 +19,19 @@ import soundfile as sf
 
 ARGS = list(sys.argv)
 sys.path.insert(0, os.path.dirname(__file__))
-import t1_bank_extent_probe as X   # noqa: E402
+import t1_refnoise_extent_probe as X   # noqa: E402
 from metrics import match_events   # noqa: E402
 
 BASE = ARGS[1] if len(ARGS) > 1 else "submission/v93"
-OUT = f"{BASE}_banksyn2"
+OUT = f"{BASE}_s2"
 COR_MIN, HT_HI, HT_LO = 0.45, -1.0, 0.0      # head/tail thresholds for cor >= 0.6 / 0.45-0.6
 
 
 def main():
-    X.B.load_synth_bank()
-    import bank_match as BM
-    meta = list(BM.build_bank.meta)
-    M = json.load(open("work/bank/test_pe.json"))
+    X.B.load_synth_templates()
+    import refnoise_match as BM
+    meta = list(BM.build_templates.meta)
+    M = json.load(open("work/refnoise/test_pe.json"))
     syn = json.load(open("work/eval_syn_pred_fixed.json"))
     rer = set(json.load(open("submission/v70/info.json")).get("rerouted", []))
     rows = [json.loads(l) for l in open(f"{BASE}/predictions.jsonl") if l.strip()]

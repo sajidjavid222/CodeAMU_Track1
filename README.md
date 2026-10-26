@@ -5,7 +5,7 @@ Osama Zaheer (Binary Semantics), Ahraz Shamim (Vecmocon Technologies)
 **Primary contact:** Sajid Javid — sajidj@iiitd.ac.in
 
 **Final standing: 1st place, Phase 2 (final) leaderboard — Combined 1.6173** (Event F1 0.7895 + Segment Dice 0.8278;
-natural clips F1 0.5197 / Dice 0.7256, synthetic clips F1 0.9981 / Dice 0.9966), submission `v93_banksyn7`.
+natural clips F1 0.5197 / Dice 0.7256, synthetic clips F1 0.9981 / Dice 0.9966), submission `v93_s7` (Codabench ID 989629).
 Technical report: [`docs/CodeAMU_track_1_1.pdf`](docs/CodeAMU_track_1_1.pdf).
 Detector checkpoints: <https://huggingface.co/sajidjavid/CodeAMU-IndoML2026-Track1>. Companion Track 2 system: <https://github.com/sajidjavid222/CodeAMU_Track2>.
 
@@ -46,12 +46,12 @@ CodeAMU_Track1/
 │   ├── run_pipeline.py                         # entry point (stages 1-5, resumable)
 │   ├── infer.py                                # stage 1: detector frame probabilities
 │   ├── t1_v67_decode.py                        # stage 2: routing, ensembles, decoding
-│   ├── bank_match.py                           # stage 3: matching against validation-derived noise
-│   ├── t2_bank_subtract.py                     # stage 4: extents of the matched noise
-│   ├── build_v68.py ... build_v93_banksyn7.py  # stage 5: refinement chain
-│   ├── t1_bank_extent_probe.py, t1_syn_fp_probe.py, enhance.py   # energy test, noise meter (Track 2 enhancer)
+│   ├── refnoise_match.py                       # stage 3: matching against validation-derived noise
+│   ├── t2_refnoise_subtract.py                 # stage 4: extents of the matched noise
+│   ├── build_v68.py ... build_v93_s7.py        # stage 5: refinement chain
+│   ├── t1_refnoise_extent_probe.py, t1_syn_fp_probe.py, enhance.py   # energy test, noise meter (Track 2 enhancer)
 │   ├── route_combined.py, detector_router.py   # combined routing for the Track 2 inputs (--track2_inputs)
-│   └── (helpers) postprocess.py, dur_snap.py, boundary_regressor.py, bank_merge.py, metrics.py, synth_clf.py, ...
+│   └── (helpers) postprocess.py, dur_snap.py, boundary_regressor.py, refnoise_merge.py, metrics.py, synth_clf.py, ...
 ├── assets/                                     # synth_clf.pkl (router), detector_router.pkl, boundary_regressor.pkl, route_v43.json, syn_branch_v57.json
 ├── checkpoints/
 │   ├── detectors/<name>/best.pt                # 24 detectors, ≈34 GB -> python scripts/download_checkpoints.py
@@ -115,7 +115,7 @@ bash scripts/run_inference.sh /path/to/test/audio /path/to/run_dir /path/to/vali
 **Outputs** (`<run_dir>/output/`)
 * `predictions.jsonl`: one line per clip, `{"clip_id": ..., "events": [{"onset": s, "offset": s}, ...]}`;
 * `submission.zip`: `predictions.jsonl` at the zip root (Codabench format).
-Intermediate artefacts (`work/`, `submission/v67 ... v93_banksyn7/`) stay in the run dir; every stage is skipped if its
+Intermediate artefacts (`work/`, `submission/v67 ... v93_s7/`) stay in the run dir; every stage is skipped if its
 output exists, so a run can be resumed.
 
 **Track 2 inputs.** The CodeAMU Track 2 system takes this system's event timestamps and synthetic/natural routing as
@@ -135,8 +135,8 @@ shipped in [`CodeAMU_Track2/inputs/phase2/`](https://github.com/sajidjavid222/Co
   `cb_big`), re-run with `inference/infer.py` on one H200 `3g.71gb` slice, reproduce the cached frame probabilities of
   all 5,517 clips bit for bit.
 * Stages 2 and 5: from the cached detector outputs and stage 3-4 outputs, `run_pipeline.py` regenerates every
-  intermediate submission (v67, v69, v70, v71, v74, v76, v80, v93, v93_banksyn2 ... v93_banksyn7) identically on all
-  5,517 clips; the final output equals the submitted `v93_banksyn7` (13,449 events).
+  intermediate submission (v67, v69, v70, v71, v74, v76, v80, v93, v93_s2 ... v93_s7) identically on all
+  5,517 clips; the final output equals the submitted `v93_s7` (13,449 events).
 * Stages 3 and 4 regenerated from scratch on CPU: identical up to float rounding, except where near-identical noise
   copies tie and rounding picks a different one (995 clips). Carried through stage 5, this changes the final output in
   1 of 5,517 clips: one event edge moves by 0.5 ms (13,449 events either way).

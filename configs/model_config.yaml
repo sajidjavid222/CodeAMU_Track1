@@ -1,4 +1,4 @@
-# CodeAMU - IndoML 2026 Track 1 final system: submission v93_banksyn7
+# CodeAMU - IndoML 2026 Track 1 final system: submission v93_s7
 # Leaderboard (Phase 2 final): Event F1 0.7895, Segment Dice 0.8278, Combined 1.6173 (rank 1)
 #   natural   clips: F1 0.5197, Dice 0.7256        synthetic clips: F1 0.9981, Dice 0.9966
 
@@ -40,28 +40,28 @@ synthetic_branch:
   split_events: {split_thr: 0.06, min_sub: 0.10, max_pair_gap: 0.40}
   duration_snap: {split: 0.45, snap_short: 0.12, peak_short: 0.10, snap_long: 0.22, peak_long: 0.20}
 
-noise_bank:                     # inference/bank_match.py; official validation release, noise = mixture - clean at labelled spans
+reference_noise:                # inference/refnoise_match.py; official validation release, noise = mixture - clean at labelled spans
   recordings: 1181              # 2,213 labelled events after de-duplication
-  natural_augmented: 4118       # + labelled events of the validation natural clips ("nb" bank)
+  natural_augmented: 4118       # + labelled events of the validation natural clips ("nb" refnoise)
   matching: {rate_hz: 8000, whitening: pre-emphasis 0.97, candidate_floor: 0.20, peaks_per_template: 3, overlap_reject: 0.30}
 
 refinement_chain:               # inference/run_pipeline.py stage 5
-  v69: synthetic events snapped to whitened bank matches (bank_merge V69 rule)
+  v69: synthetic events snapped to whitened refnoise matches (refnoise_merge V69 rule)
   v70: natural-routed clips with >= 3 matches at cor >= 0.9 rerouted (none on the test set); natural clips merged with
-       trusted bank matches (V70_NAT: th 0.7, tol_abs 0.2, tol_rel 0.5)
+       trusted refnoise matches (V70_NAT: th 0.7, tol_abs 0.2, tol_rel 0.5)
   v71: natural split_events split_thr 0.17, max_pair_gap 0.30 + collar optimisation
-  v74: exact synthetic snaps from the natural-augmented bank
+  v74: exact synthetic snaps from the natural-augmented refnoise
   v76: synthetic exact snaps (cor >= 0.967) + natural duplicate NMS (IoU >= 0.50, duration ratio >= 0.50)
   v80: natural duplicate NMS (IoU >= 0.30, duration ratio >= 0.30)
   v93: natural confidence false-alarm filter (rules c1-c7 on mean/peak presence and edge peaks), NMS (0.29, 0.28),
        steepest-descent offset cut (rate 0.105 over the last 100 ms), collar alignment (+8.5 ms >= 0.45 s, +4 ms shorter)
-  banksyn2: synthetic events replaced/added by energy-verified bank spans
-  banksyn3: bank-unsupported synthetic events dropped when the Track 2 enhancer removes < -12 dB of their energy
-  banksyn4: natural clips - bank spans (cor >= 0.7; 0.6-0.7 and 0.45-0.6 energy-verified) snap / replace / add
-  banksyn5: low-correlation (0.30-0.45) bank spans passing a strict energy test (frac >= 0.3)
-  banksyn7: every still-empty natural clip gets one event over the natural ensemble's activity envelope (p >= 0.20)
+  v93_s2: synthetic events replaced/added by energy-verified refnoise spans
+  v93_s3: refnoise-unsupported synthetic events dropped when the Track 2 enhancer removes < -12 dB of their energy
+  v93_s4: natural clips - refnoise spans (cor >= 0.7; 0.6-0.7 and 0.45-0.6 energy-verified) snap / replace / add
+  v93_s5: low-correlation (0.30-0.45) refnoise spans passing a strict energy test (frac >= 0.3)
+  v93_s7: every still-empty natural clip gets one event over the natural ensemble's activity envelope (p >= 0.20)
 
-energy_test:                    # inference/t1_bank_extent_probe.py extent(); calibrated on validation (cross-clip copies)
+energy_test:                    # inference/t1_refnoise_extent_probe.py extent(); calibrated on validation (cross-clip copies)
   frame: 10 ms reduction = 10*log10(E_mixture / E_residual) after subtracting the matched template with a fitted gain
   pass: any frame >= 1 dB and mean(first 100 ms, last 100 ms) >= 0 dB (cor 0.45-0.6) / >= -1 dB (cor >= 0.6)
   low_cor_extra: fraction of template frames >= 1 dB at least 0.3 (cor 0.30-0.45)
@@ -69,4 +69,4 @@ energy_test:                    # inference/t1_bank_extent_probe.py extent(); ca
 noise_meter:                    # inference/t1_syn_fp_probe.py
   model: Track 2 TF-DPCRN ensemble (checkpoints/enhancer/t2_model_{0,1,2}.pt), whole-clip window
   statistic: D = 10*log10(E_removed / E_mixture) per 10 ms frame, averaged over the event
-  drop_below_db: -12           # bank-span (noise) regions: median -2 dB; noise-free speech: median -64 dB
+  drop_below_db: -12           # refnoise-span (noise) regions: median -2 dB; noise-free speech: median -64 dB

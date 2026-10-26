@@ -24,7 +24,7 @@ import zipfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
-from bank_merge import V70_NAT, merge_nat
+from refnoise_merge import V70_NAT, merge_nat
 from boundary_regressor import FRAME, apply_boundary_trim
 from dur_snap import dur_snap
 from postprocess import _peaks, decode_frames, split_events
@@ -48,7 +48,7 @@ def main():
     syn_flag = json.load(open("work/eval_syn_pred_fixed.json"))
     v70_info = json.load(open("submission/v70/info.json"))
     rerouted = set(v70_info.get("rerouted", []))
-    nat_bank = json.load(open("work/bank/testnat_pe.json"))
+    nat_refnoise = json.load(open("work/refnoise/testnat_pe.json"))
     nat_cache = dict(np.load("work/ens_nat_eval_v60.npz"))
     reg = pickle.load(open("work/boundary_regressor.pkl", "rb"))
 
@@ -103,7 +103,7 @@ def main():
 
             tr = [tuple(x) for x in apply_boundary_trim(sorted(set(new)), p, on, off, None, reg,
                                                         min_shift=MIN_SHIFT, max_shift=MAX_SHIFT)]
-            v71_events = merge_nat(tr, nat_bank.get(cid, []), **V70_NAT)
+            v71_events = merge_nat(tr, nat_refnoise.get(cid, []), **V70_NAT)
 
             if v71_events != old_evs:
                 n_nat_changed += 1

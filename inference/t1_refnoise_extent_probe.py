@@ -1,9 +1,9 @@
-"""Where does a matched bank template really explain the Track 1 test audio? (truncated-copy check)
+"""Where does a matched refnoise template really explain the Track 1 test audio? (truncated-copy check)
 
 For a match (template k at onset), subtract g*t at the best lag; per 10 ms frame, red = 10log10(E_mix/E_resid).
 Frames where the copy is present show a clear energy reduction; template frames past a truncation point show
 red <= 0 (subtracting noise that is not there adds energy). Extent = first..last frame with red >= RED_DB.
-    python src/t1_bank_extent_probe.py submission/v93_banksyn/info.json
+    python src/t1_refnoise_extent_probe.py submission/v93_s1/info.json
 """
 import json
 import os
@@ -14,7 +14,7 @@ import soundfile as sf
 
 ARGS = list(sys.argv)
 sys.path.insert(0, os.path.dirname(__file__))
-import phase2_bank_subtract_opt as B  # noqa: E402  (overwrites sys.argv)
+import phase2_refnoise_subtract_opt as B  # noqa: E402  (overwrites sys.argv)
 from metrics import match_events      # noqa: E402
 
 TEST = os.environ.get("T1_TEST_AUDIO", "test_audio")          # folder of the test WAVs
@@ -38,10 +38,10 @@ def extent(x, m, meta):
 
 def main():
     info = json.load(open(ARGS[1]))
-    B.load_synth_bank()
-    import bank_match as BM
-    meta = list(BM.build_bank.meta)
-    M = json.load(open("work/bank/test_pe.json"))
+    B.load_synth_templates()
+    import refnoise_match as BM
+    meta = list(BM.build_templates.meta)
+    M = json.load(open("work/refnoise/test_pe.json"))
     cache = {}
     def audio(c):
         if c not in cache:
@@ -66,10 +66,10 @@ def main():
         if len(ctl) >= 300:
             break
     ctl = np.array(ctl)
-    if len(ctl): print(f"CONTROL ({len(ctl)} agreeing matches): energy extent - bank span | onset median {np.median(ctl[:, 0]) * 1000:.0f} ms, "
+    if len(ctl): print(f"CONTROL ({len(ctl)} agreeing matches): energy extent - refnoise span | onset median {np.median(ctl[:, 0]) * 1000:.0f} ms, "
           f"|.|<=50ms {np.mean(np.abs(ctl[:, 0]) <= 0.05):.2f} | offset median {np.median(ctl[:, 1]) * 1000:.0f} ms, "
           f"|.|<=0.2*dur {np.mean(np.abs(ctl[:, 1]) <= np.maximum(0.2 * ctl[:, 2], 0.05)):.2f}")
-    print("\nCHANGED EVENTS: clip | bank span | old pred | energy extent | frac frames red>=1dB | last-100ms mean red")
+    print("\nCHANGED EVENTS: clip | refnoise span | old pred | energy extent | frac frames red>=1dB | last-100ms mean red")
     for e in info["log"]:
         c = e["clip_id"]
         spans = e["spans"] if "spans" in e else [e["added"]]
@@ -79,7 +79,7 @@ def main():
             ee = f"({r[2]:.3f}, {r[3]:.3f})" if r and r[2] is not None else "none"
             frac = float(np.mean(r[4] >= RED_DB)) if r else 0.0
             tail = float(np.mean(r[4][-10:])) if r else 0.0
-            print(f"{c[-28:]} | bank ({a:.3f}, {b:.3f}) cor {cr:.2f} | old {str(tuple(round(v, 3) for v in old)) if old else 'none':>16} | "
+            print(f"{c[-28:]} | refnoise ({a:.3f}, {b:.3f}) cor {cr:.2f} | old {str(tuple(round(v, 3) for v in old)) if old else 'none':>16} | "
                   f"energy {ee} | {frac:.2f} | {tail:+.1f} dB")
 
 

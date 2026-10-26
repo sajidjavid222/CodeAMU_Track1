@@ -1,10 +1,10 @@
-"""v93_banksyn5 = v93_banksyn4 + LOW-correlation (0.30-0.45) bank matches that pass a strict energy test.
+"""v93_s5 = v93_s4 + LOW-correlation (0.30-0.45) refnoise matches that pass a strict energy test.
 
-Validation (src/t1_bank_lowcor_calib.py): at cor 0.30-0.45 a bank match marks an annotation only 0.6-10% of the
+Validation (src/t1_refnoise_lowcor_calib.py): at cor 0.30-0.45 a refnoise match marks an annotation only 0.6-10% of the
 time, but with energy pass (any frame >= 1 dB, head/tail >= 0 dB) AND >= 30% of template frames explained:
-natural 3/3, synthetic 12/13 agree. Same actions as banksyn4 (snap within tolerance, replace overlapping
+natural 3/3, synthetic 12/13 agree. Same actions as s4 (snap within tolerance, replace overlapping
 unmatched predictions, add). Spans overlapping an already-accepted (cor >= 0.45) span are skipped.
-    python src/build_v93_banksyn5.py
+    python src/build_v93_s5.py
 """
 import json
 import os
@@ -15,19 +15,19 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, os.path.dirname(__file__))
-import t1_bank_extent_probe as X   # noqa: E402
+import t1_refnoise_extent_probe as X   # noqa: E402
 from metrics import match_events   # noqa: E402
 
-BASE, OUT = "submission/v93_banksyn4", "submission/v93_banksyn5"
+BASE, OUT = "submission/v93_s4", "submission/v93_s5"
 LO, HI, FRAC = 0.30, 0.45, 0.3
 
 
 def main():
-    X.B.load_synth_bank()
-    import bank_match as BM
-    meta = list(BM.build_bank.meta)
+    X.B.load_synth_templates()
+    import refnoise_match as BM
+    meta = list(BM.build_templates.meta)
     syn = json.load(open("work/eval_syn_pred_fixed.json"))
-    MS, MN = json.load(open("work/bank/test_pe.json")), json.load(open("work/bank/testnat_pe.json"))
+    MS, MN = json.load(open("work/refnoise/test_pe.json")), json.load(open("work/refnoise/testnat_pe.json"))
     rows = [json.loads(l) for l in open(f"{BASE}/predictions.jsonl") if l.strip()]
     stat = {"nat": {"snap": 0, "replace": 0, "add": 0}, "syn": {"snap": 0, "replace": 0, "add": 0}, "tested": 0, "passed": 0}
     log = []

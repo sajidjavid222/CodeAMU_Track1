@@ -1,10 +1,10 @@
-"""v93_banksyn3 = v93_banksyn2 minus synthetic predictions that no bank copy supports AND where the Track 2
+"""v93_s3 = v93_s2 minus synthetic predictions that no refnoise copy supports AND where the Track 2
 enhancer finds no noise (src/t1_syn_fp_probe.py -> work/t1_syn_unsupported_D.json).
 
-Noise meter (removed-energy share D, dB): bank-span regions median -2 (4% below -12), noise-free speech median
+Noise meter (removed-energy share D, dB): refnoise-span regions median -2 (4% below -12), noise-free speech median
 -64 (97% below -12). Unsupported predictions are bimodal: ~28 below -12 dB (speech only -> false alarms),
-~40 near 0 dB (real noises absent from the bank -> kept). Never removes a clip's last event.
-    python src/build_v93_banksyn3.py [thr_db=-12]
+~40 near 0 dB (real noises absent from the refnoise -> kept). Never removes a clip's last event.
+    python src/build_v93_s3.py [thr_db=-12]
 """
 import json
 import os
@@ -12,7 +12,7 @@ import sys
 import zipfile
 
 THR = float(sys.argv[1]) if len(sys.argv) > 1 else -12.0
-BASE, OUT = "submission/v93_banksyn2", "submission/v93_banksyn3" if len(sys.argv) <= 1 else f"submission/v93_banksyn3_{abs(int(THR))}"
+BASE, OUT = "submission/v93_s2", "submission/v93_s3" if len(sys.argv) <= 1 else f"submission/v93_s3_{abs(int(THR))}"
 
 drop = {(d["clip_id"], round(d["onset"], 6), round(d["offset"], 6)) for d in json.load(open("work/t1_syn_unsupported_D.json")) if d["D"] < THR}
 rows = [json.loads(l) for l in open(f"{BASE}/predictions.jsonl") if l.strip()]
