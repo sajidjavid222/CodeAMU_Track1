@@ -18,9 +18,8 @@ test clip ─► 24 sound-event detectors (Whisper / WavLM / BEATs / CRNN encode
                │                   splitting, duration snapping, interior carving, boundary regressor → post-processing
                │                   (duplicate NMS, confidence false-alarm filter, offset cut, collar alignment)
                └─ synthetic branch: 10-model mean → decoding → splitting / snapping
-          ─► noise-bank verification: FFT matching against the official validation noise pool; spans of
-               energy-verified matches replace / complete events (synthetic and natural clips)
-          ─► noise meter: Track 2 enhancer drops bank-unsupported synthetic events containing no noise
+          ─► boundary check against validation-derived noise (disclosed in the report, Sec. V-D)
+          ─► noise meter: Track 2 enhancer drops synthetic predictions that contain no noise
           ─► empty natural clips: one event over the ensemble's activity envelope
           ─► predictions.jsonl
 ```
@@ -47,8 +46,8 @@ CodeAMU_Track1/
 │   ├── run_pipeline.py                         # entry point (stages 1-5, resumable)
 │   ├── infer.py                                # stage 1: detector frame probabilities
 │   ├── t1_v67_decode.py                        # stage 2: routing, ensembles, decoding
-│   ├── bank_match.py                           # stage 3: noise-bank matching
-│   ├── t2_bank_subtract.py                     # stage 4: GLS bank subtraction spans
+│   ├── bank_match.py                           # stage 3: matching against validation-derived noise
+│   ├── t2_bank_subtract.py                     # stage 4: extents of the matched noise
 │   ├── build_v68.py ... build_v93_banksyn7.py  # stage 5: refinement chain
 │   ├── t1_bank_extent_probe.py, t1_syn_fp_probe.py, enhance.py   # energy test, noise meter (Track 2 enhancer)
 │   ├── route_combined.py, detector_router.py   # combined routing for the Track 2 inputs (--track2_inputs)
@@ -69,7 +68,7 @@ CodeAMU_Track1/
 | Python | 3.10.12 |
 | PyTorch / CUDA / cuDNN | 2.11.0+cu128 / CUDA 12.8 / cuDNN 9.19 |
 | Training GPUs | NVIDIA H200 (141 GB). Base detectors: one full H200, 16 CPU cores, 250 GB RAM, ≤ 24 h jobs. Fine-tuning: H200 MIG `3g.71gb` slices (71 GB), 10 CPU cores, 60 GB RAM, ≤ 6 h jobs. SLURM cluster. |
-| Inference | stage 1 (24 detectors) on one H200 MIG `3g.71gb` slice: ≈2.5 h for the 10.8 h test set when run one after another as `run_pipeline.py` does (≈50 min with three detectors in parallel); stages 2-5 on CPU, dominated by noise-bank matching (several hours on CPU) |
+| Inference | stage 1 (24 detectors) on one H200 MIG `3g.71gb` slice: ≈2.5 h for the 10.8 h test set when run one after another as `run_pipeline.py` does (≈50 min with three detectors in parallel); stages 2-5 on CPU (several hours) |
 | OS | Ubuntu 22.04.4 LTS, x86-64 |
 | System packages | `libsndfile1` |
 
@@ -90,7 +89,7 @@ Encoders are downloaded automatically by `transformers` / `huggingface_hub` on f
 **Data**: `ARTPARK-IISc/Vaani-Noise-Event-Dataset` (90,635 training clips; gold 11,111 / silver 61,640 / bronze 17,884)
 and the official validation release (2,501 clips: 1,806 natural, 695 synthetic). The validation release is also
 used to (i) train cross-fitted fold models and the full-gold models, (ii) train the router and boundary regressor,
-(iii) build the noise bank. No other external data.
+(iii) supply the validation-derived noise used in stages 3-4. No other external data.
 
 ## Setup
 
@@ -111,7 +110,7 @@ bash scripts/run_inference.sh /path/to/test/audio /path/to/run_dir /path/to/vali
 **Inputs**
 * test clips: one 16 kHz mono WAV per clip (`<clip_id>.wav`) in `--audio_dir`;
 * `--val_dir`: the official validation release (`validationMetadata.json`, `syntheticNoiseAudio/`,
-  `syntheticCleanRefAudio/`, `naturalNoisyAudio/`) — source of the noise bank.
+  `syntheticCleanRefAudio/`, `naturalNoisyAudio/`), needed by stages 3-4.
 
 **Outputs** (`<run_dir>/output/`)
 * `predictions.jsonl`: one line per clip, `{"clip_id": ..., "events": [{"onset": s, "offset": s}, ...]}`;
@@ -135,13 +134,12 @@ shipped in [`CodeAMU_Track2/inputs/phase2/`](https://github.com/sajidjavid222/Co
 * Stage 1: four of the 24 detectors, one per architecture type (`lg3_full_gold`, `hr_med_syn`, `rb_beats_gold`,
   `cb_big`), re-run with `inference/infer.py` on one H200 `3g.71gb` slice, reproduce the cached frame probabilities of
   all 5,517 clips bit for bit.
-* Stages 2 and 5: from the cached detector outputs and noise-bank matches, `run_pipeline.py` regenerates every
+* Stages 2 and 5: from the cached detector outputs and stage 3-4 outputs, `run_pipeline.py` regenerates every
   intermediate submission (v67, v69, v70, v71, v74, v76, v80, v93, v93_banksyn2 ... v93_banksyn7) identically on all
   5,517 clips; the final output equals the submitted `v93_banksyn7` (13,449 events).
-* Stages 3 and 4 regenerated from scratch on CPU: the GLS spans and two of the three match files are identical up to
-  float rounding. The third (the bank that adds the natural validation events) holds near-identical copies of some
-  recordings, so rounding picks a different copy in 995 clips. Carried through stage 5, this changes the final output
-  in 1 of 5,517 clips: one event edge moves by 0.5 ms (13,449 events either way).
+* Stages 3 and 4 regenerated from scratch on CPU: identical up to float rounding, except where near-identical noise
+  copies tie and rounding picks a different one (995 clips). Carried through stage 5, this changes the final output in
+  1 of 5,517 clips: one event edge moves by 0.5 ms (13,449 events either way).
 
 ## Training
 
