@@ -18,7 +18,7 @@ test clip ─► 24 sound-event detectors (Whisper / WavLM / BEATs / CRNN encode
                │                   splitting, duration snapping, interior carving, boundary regressor → post-processing
                │                   (duplicate NMS, confidence false-alarm filter, offset cut, collar alignment)
                └─ synthetic branch: 10-model mean → decoding → splitting / snapping
-          ─► boundary check against validation-derived noise (disclosed in the report, Sec. V-D)
+          ─► boundary check against validation-derived noise (described in the report, Sec. V-D)
           ─► noise meter: Track 2 enhancer drops synthetic predictions that contain no noise
           ─► empty natural clips: one event over the ensemble's activity envelope
           ─► predictions.jsonl
