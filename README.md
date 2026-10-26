@@ -1,6 +1,6 @@
 # CodeAMU — IndoML 2026 Datathon, Track 1: Noise Event Detection
 
-**Team CodeAMU** — Shah Ahmed Shakir Abu Asim Khan (Aligarh Muslim University), Sajid Javid (IIIT Delhi),
+**Team CodeAMU** — Sajid Javid (IIIT Delhi), Shah Ahmed Shakir Abu Asim Khan (Aligarh Muslim University),
 Osama Zaheer (Binary Semantics), Ahraz Shamim (Vecmocon Technologies)
 **Primary contact:** Sajid Javid — sajidj@iiitd.ac.in
 
